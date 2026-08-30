@@ -8,11 +8,11 @@ Reference implementation: `src/domain/ports/timers.port.ts`, `src/adapters/timer
 
 ## Files and names
 
-| Role | Path | Class |
-| --- | --- | --- |
-| Port | `src/domain/ports/<capability>.port.ts` | Capability (`Timers`) — no `Port` suffix |
-| Adapter (single-file) | `src/adapters/<capability>/<source>.adapter.ts` | `<Source><Capability>` (`NativeTimers`) — no `Adapter` suffix |
-| Adapter (multi-file) | `src/adapters/<capability>/<source>/<source>.adapter.ts` plus siblings | same class rule; entry keeps the `*.adapter.ts` suffix |
+| Role                  | Path                                                                   | Class                                                         |
+| --------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Port                  | `src/domain/ports/<capability>.port.ts`                                | Capability (`Timers`) — no `Port` suffix                      |
+| Adapter (single-file) | `src/adapters/<capability>/<source>.adapter.ts`                        | `<Source><Capability>` (`NativeTimers`) — no `Adapter` suffix |
+| Adapter (multi-file)  | `src/adapters/<capability>/<source>/<source>.adapter.ts` plus siblings | same class rule; entry keeps the `*.adapter.ts` suffix        |
 
 `<capability>` is the Port file stem (`timers`, `issue-tracker`). **Source** is the thing across the Seam: runtime (`native`), package (`stripe`), or HTTP system (`github`, `fetch`). Ports cover all three. One Port per file. Import the entry file; there is no barrel `index.ts`.
 

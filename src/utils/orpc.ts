@@ -4,7 +4,7 @@ import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 
 const link = new RPCLink({
-  url: '/api/rpc',
+	url: '/api/rpc',
 })
 
 export const orpc: RouterClient<typeof router> = createORPCClient(link)

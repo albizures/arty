@@ -1,13 +1,12 @@
 import { withCrapTypescriptVitest } from '@barney-media/crap-typescript-vitest'
 
-
-const EXCLUDED_PATHS = ['.stryker-tmp/**/*'];
+const EXCLUDED_PATHS = ['.stryker-tmp/**/*']
 
 export default withCrapTypescriptVitest(
-  {
-    test: {
-      passWithNoTests: true,
-      coverage: {
+	{
+		test: {
+			passWithNoTests: true,
+			coverage: {
 				provider: 'v8',
 				reporter: ['text', 'lcov'],
 				include: ['src/**/*.ts'],
@@ -19,11 +18,11 @@ export default withCrapTypescriptVitest(
 					statements: 100,
 				},
 			},
-    },
-  },
-  {
-    threshold: 6,
+		},
+	},
+	{
+		threshold: 6,
 		agent: true,
 		excludes: EXCLUDED_PATHS,
-  },
+	},
 )
