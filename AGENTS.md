@@ -11,3 +11,7 @@ This repo uses the default five canonical triage labels. See `docs/agents/triage
 ### Domain docs
 
 This repo uses a single-context domain documentation layout. See `docs/agents/domain.md`.
+
+### Coding standards
+
+Code quality, testability, result, port, and defensive-programming standards live in `docs/agents/coding-standards.md`.
