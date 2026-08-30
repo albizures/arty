@@ -11,7 +11,7 @@ Issue tracker conventions live in `docs/agents/issue-tracker.md`; triage labels 
 
 The user may name a feature slug, a `.scratch/<feature-slug>/` directory, a spec path, or an issue path. If they do not, discover local efforts under `.scratch/`. If there is exactly one effort, use it. If there are several, ask which one to work. If `.scratch/` does not exist or no effort can be inferred, stop and ask for the spec effort.
 
-If a quality gate needs `pnpm health -- <base-ref>` and the user did not provide the base ref, run the other quality commands first, then ask for the base ref only if no tasks were created from earlier failures.
+Mutation and health use the same explicit comparison base. If the user did not provide the base ref, run `pnpm lint`, `pnpm typecheck`, and `pnpm test` first, then ask for the base ref only if no tasks were created from earlier failures.
 
 ## Cycle
 
@@ -32,24 +32,24 @@ Use `/implement` on the claimed task. Pass along any spec path and the task path
 
 When implementation is complete:
 
-- Set the task `Status:` to `resolved` only if its acceptance criteria are met and the applicable quality gate from `docs/agents/coding-standards/quality.md` is satisfied.
+- Set the task `Status:` to `resolved` only if its acceptance criteria are met and `/implement` has satisfied its implementation quality gate.
 - Append a short `## Result` note if the issue does not already have one.
 
 Then stop. One `work-spec` cycle handles one implementation task.
 
 ### 3. If no frontier task exists, run quality
 
-Run the configured quality commands from `docs/agents/coding-standards/quality.md`:
+Run the configured quality commands from `docs/agents/coding-standards/quality.md`, with mutation scoped to changed and new production files only:
 
 ```bash
 pnpm lint
 pnpm typecheck
 pnpm test
-pnpm mutation
+pnpm mutation --mutate <changed-or-new-production-files>
 pnpm health -- <base-ref>
 ```
 
-`pnpm health` requires an explicit base ref. Do not guess it.
+Use the explicit `<base-ref>` for both the changed/new-file set and `pnpm health`; do not guess it. Build `<changed-or-new-production-files>` from modified, added, renamed, copied, or type-changed files against `<base-ref>` that match Stryker's production-source scope (`src/**/!(*.test|*.spec).{ts,tsx}`). Pass them to `--mutate` as a comma-separated list. If no changed or new production files exist, skip `pnpm mutation` and record that it was not applicable.
 
 ### 4. Create tasks from quality failures
 
@@ -65,7 +65,7 @@ Each generated issue must include:
 
 Suggested skill mapping:
 
-- Mutation survivors or mutation-threshold failures → `mutation-review`.
+- Mutation survivors, mutation-threshold failures, or failures while building the changed-file mutation set → `mutation-review`.
 - Reproducible failing tests or broken behavior → `diagnosing-bugs` or `tdd`.
 - Lint or TypeScript failures → `implement`.
 - Fallow health findings → `implement` unless a more specific project skill exists.
