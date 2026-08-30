@@ -4,8 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "mutation": "stryker run",
     "fallow": "fallow",
     "fallow:audit": "fallow audit"
   },
@@ -25,11 +29,25 @@
     "@antfu/eslint-config": "^9.3.0",
     "@barney-media/crap-typescript-vitest": "^0.5.0",
     "@eslint-react/eslint-plugin": "^5.18.2",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.8.0",
     "eslint-plugin-format": "^2.0.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "fallow": "^3.20.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "@orpc/client": "2.0.0-beta.32",
+    "@orpc/server": "2.0.0-beta.32",
+    "next": "^16.3.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.5.2"
   }
 }
