@@ -1,11 +1,14 @@
+import type { CameraDirectionPresetKey, CameraElevationPresetKey, OutputSizePresetKey } from './camera-output-preset'
 import type { OfficialRendererVariantKey, RendererRule } from './renderer-variant'
 import type { OccupiedVoxel, ParsedVoxelModel } from './voxel-model-dsl'
 
+import { assert } from '../utils/error'
+import { assertOfficialCameraOutputPresetSelection } from './camera-output-preset'
 import { OFFICIAL_RENDERER_VARIANTS } from './renderer-variant'
 
-export type RenderDirectionKey = 'front-right' | 'back-right' | 'back-left' | 'front-left'
-export type RenderElevationKey = 'elev26' | 'elev35'
-export type RenderOutputSize = 64 | 128
+export type RenderDirectionKey = CameraDirectionPresetKey
+export type RenderElevationKey = CameraElevationPresetKey
+export type RenderOutputSize = OutputSizePresetKey
 
 export type ImplementedVoxelSpriteRendererVariantKey = OfficialRendererVariantKey
 
@@ -148,8 +151,11 @@ const OUTLINE_NEIGHBORS = [
 ] as const
 
 const MINIMUM_INTERNAL_EDGE_VISIBLE_LENGTH = 2
+const VOXEL_SPRITE_RENDER_REQUEST_KEYS = new Set(['model', 'variant', 'direction', 'elevation', 'outputSize'])
 
 export function renderVoxelSprite(request: VoxelSpriteRenderRequest): RenderedVoxelSprite {
+	assertVoxelSpriteRenderRequestUsesOfficialCameraOutputPreset(request)
+
 	const rules = OFFICIAL_RENDERER_VARIANTS[request.variant].rules
 	const projectedVoxels = projectVoxels(request.model.voxels, request.direction, request.elevation, request.outputSize)
 	const faces = visibleRenderedFaces(request.model, projectedVoxels, request.direction, request.variant)
@@ -186,6 +192,15 @@ export function renderConservativeVoxelSprite(request: ConservativeVoxelSpriteRe
 
 export function renderFullVoxelSprite(request: FullVoxelSpriteRenderRequest): RenderedVoxelSprite {
 	return renderVoxelSprite(request)
+}
+
+function assertVoxelSpriteRenderRequestUsesOfficialCameraOutputPreset(request: VoxelSpriteRenderRequest): void {
+	assert(Object.keys(request).every((key) => VOXEL_SPRITE_RENDER_REQUEST_KEYS.has(key)), 'Voxel sprite rendering accepts only official named camera/output preset request fields')
+	assertOfficialCameraOutputPresetSelection({
+		direction: request.direction,
+		elevation: request.elevation,
+		outputSize: request.outputSize,
+	})
 }
 
 // Stryker disable all: private pixel-grid implementation is mutation-triaged through exact public render artifacts; remaining equivalent/tolerated mutants are arithmetic/sort branch details whose behavior is locked by renderer seam snapshots.

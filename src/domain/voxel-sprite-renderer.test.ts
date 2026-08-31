@@ -2,6 +2,7 @@ import type { ParsedVoxelModel } from './voxel-model-dsl'
 
 import { describe, expect, it } from 'vitest'
 
+import { OFFICIAL_CAMERA_OUTPUT_PRESET_MATRIX } from './camera-output-preset'
 import { OFFICIAL_RENDERER_VARIANTS } from './renderer-variant'
 import { renderBaselineVoxelSprite, renderConservativeVoxelSprite, renderFullVoxelSprite, renderVoxelSprite } from './voxel-sprite-renderer'
 
@@ -23,6 +24,38 @@ const CART_MODEL = {
 		{ x: 0, y: 1, z: 0, material: 'body' },
 	],
 } as const satisfies ParsedVoxelModel
+
+describe('renderVoxelSprite official camera/output presets', () => {
+	it('renders every official preset combination orthographically and deterministically for every official renderer', () => {
+		for (const variant of ['baseline', 'conservative', 'full'] as const) {
+			for (const preset of OFFICIAL_CAMERA_OUTPUT_PRESET_MATRIX) {
+				const request = { model: CART_MODEL, variant, ...preset }
+				const firstRender = renderVoxelSprite(request)
+				const secondRender = renderVoxelSprite(request)
+
+				expect(firstRender.projection).toBe('orthographic')
+				expect(firstRender).toMatchObject(preset)
+				expect(firstRender.faces).toEqual(secondRender.faces)
+				expect(firstRender.outlinePixels).toEqual(secondRender.outlinePixels)
+				expect([...firstRender.pixels]).toEqual([...secondRender.pixels])
+			}
+		}
+	})
+
+	it('rejects unsupported camera/output values and arbitrary camera controls', () => {
+		for (const request of [
+			{ model: CART_MODEL, variant: 'baseline', direction: 'side', elevation: 'elev26', outputSize: 64 },
+			{ model: CART_MODEL, variant: 'baseline', direction: 'front-right', elevation: 26.565, outputSize: 64 },
+			{ model: CART_MODEL, variant: 'baseline', direction: 'front-right', elevation: 'elev26', outputSize: 96 },
+			{ model: CART_MODEL, variant: 'baseline', direction: 'front-right', elevation: 'elev26', outputSize: 64, angle: 45 },
+			{ model: CART_MODEL, variant: 'baseline', direction: 'front-right', elevation: 'elev26', outputSize: 64, zoom: 2 },
+			{ model: CART_MODEL, variant: 'baseline', direction: 'front-right', elevation: 'elev26', outputSize: 64, focalLength: 50 },
+			{ model: CART_MODEL, variant: 'baseline', direction: 'front-right', elevation: 'elev26', outputSize: 64, canvasSize: { width: 64, height: 128 } },
+		]) {
+			expect(() => renderVoxelSprite(request as never)).toThrowError()
+		}
+	})
+})
 
 describe('renderBaselineVoxelSprite', () => {
 	it('returns deterministic baseline pixels and artifact data for the same named inputs', () => {

@@ -45,7 +45,7 @@ Run the configured quality commands from `docs/agents/coding-standards/quality.m
 pnpm lint
 pnpm typecheck
 pnpm test
-pnpm mutation --mutate <changed-or-new-production-files>
+pnpm mutation --mutate <changed-untracked-or-new-production-files>
 pnpm health -- <base-ref>
 ```
 
