@@ -1,6 +1,8 @@
+import type { BlindComparisonTrial } from './comparison-evaluation-manifest'
+
 import { describe, expect, it } from 'vitest'
 
-import { OFFICIAL_BLIND_COMPARISON_TRIALS } from './comparison-evaluation-manifest'
+import { DIAGNOSTIC_DETAIL_OUTPUT_SIZE, OFFICIAL_BLIND_COMPARISON_TRIALS } from './comparison-evaluation-manifest'
 import {
 	comparisonInspectionBackgroundStyle,
 	comparisonPageTrialPreview,
@@ -42,14 +44,19 @@ describe('comparison page previews', () => {
 		}
 	})
 
-	it('builds a 2x nearest-neighbor enlarged preview for 128px blind trials', () => {
-		const trial = OFFICIAL_BLIND_COMPARISON_TRIALS.find((candidate) => candidate.outputSize === 128)
-		expect(trial).toBeDefined()
+	it('can preview 128px diagnostic/internal trial data without making it an official participant stimulus', () => {
+		const officialParticipantTrial = OFFICIAL_BLIND_COMPARISON_TRIALS[0]!
+		const diagnosticTrial: BlindComparisonTrial = {
+			...officialParticipantTrial,
+			trialId: `${officialParticipantTrial.fixture}__${officialParticipantTrial.elevation}__${DIAGNOSTIC_DETAIL_OUTPUT_SIZE}`,
+			outputSize: DIAGNOSTIC_DETAIL_OUTPUT_SIZE,
+		}
 
-		const pageTrial = comparisonPageTrialPreview(trial ?? OFFICIAL_BLIND_COMPARISON_TRIALS[0]!, {
+		const pageTrial = comparisonPageTrialPreview(diagnosticTrial, {
 			artifactBasePath: '/phase-0/blind-artifacts',
 		})
 
+		expect(OFFICIAL_BLIND_COMPARISON_TRIALS.some((trial) => trial.outputSize === DIAGNOSTIC_DETAIL_OUTPUT_SIZE)).toBe(false)
 		expect(pageTrial.context).toMatchObject({ outputSize: 128 })
 		expect(pageTrial.stimulusSets[0]?.artifacts[0]?.actualSize).toMatchObject({ scale: 1, width: 128, height: 128 })
 		expect(pageTrial.stimulusSets[0]?.artifacts[0]?.enlarged).toMatchObject({ scale: 2, width: 256, height: 256, imageRendering: 'pixelated' })

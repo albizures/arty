@@ -49,6 +49,33 @@ describe('home comparison page', () => {
 		}
 	})
 
+	it('renders official blind trial response controls for ranking, none-usable, defects, and cleanup notes', () => {
+		const html = renderToStaticMarkup(<Home />)
+
+		expect(html).toContain('aria-label="Blind comparison response chest__elev26__64"')
+		expect(html).toContain('Rank A/B/C by most usable as pixel-art game prop sprites')
+		expect(html).toContain('Rank 1:')
+		expect(html).toContain('Rank 2:')
+		expect(html).toContain('Rank 3:')
+		expect(html.match(/name="rank-chest__elev26__64-/g)).toHaveLength(3)
+		expect(html.match(/<option value="[ABC]">Variant [ABC]<\/option>/g)).toHaveLength(9)
+		expect(html).toContain('No option is usable')
+		expect(html).toContain('name="none-usable-chest__elev26__64"')
+		expect(html).toContain('Observed defects for the whole trial')
+		expect(html).toContain('Observed defects for variant A')
+		expect(html).toContain('Observed defects for variant B')
+		expect(html).toContain('Observed defects for variant C')
+		expect(html).toContain('name="defects-chest__elev26__64-trial"')
+		expect(html).toContain('name="defects-chest__elev26__64-A"')
+		expect(html).toContain('name="defects-chest__elev26__64-C"')
+		expect(html).toContain('value="weak-or-unclear-silhouette"')
+		expect(html).toContain(' weak-or-unclear-silhouette')
+		expect(html).toContain('value="other-free-text"')
+		expect(html).toContain('Short cleanup notes')
+		expect(html).toContain('name="cleanup-notes-chest__elev26__64"')
+		expect(html).toContain('maxLength="500"')
+	})
+
 	it('renders page-only transparency inspection controls and rejected product features', () => {
 		const html = renderToStaticMarkup(<Home />)
 

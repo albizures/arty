@@ -4,6 +4,7 @@ import type { OfficialRendererVariantKey } from './renderer-variant'
 
 import { assert } from '../utils/error'
 import { OFFICIAL_ARTIFACT_MATRIX, OFFICIAL_FIXTURE_KEYS, officialArtifactName } from './artifact-matrix'
+import { OFFICIAL_BLIND_EVALUATION_PROTOCOL } from './blind-evaluation-protocol'
 import {
 	assertOfficialCameraOutputPresetSelection,
 	OFFICIAL_CAMERA_DIRECTION_PRESETS,
@@ -46,7 +47,7 @@ export type BlindComparisonTrials = {
 	answerKey: ReadonlyArray<BlindComparisonAnswerKey>
 }
 
-export const PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE = 64 satisfies OutputSizePresetKey
+export const PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE = OFFICIAL_BLIND_EVALUATION_PROTOCOL.stimulusScope.participantOutputSize
 export const DIAGNOSTIC_DETAIL_OUTPUT_SIZE = 128 satisfies OutputSizePresetKey
 
 const COMPARISON_MANIFEST_ENTRY_KEYS = new Set(['fixture', 'renderer', 'elevation', 'outputSize', 'direction', 'artifactName', 'outputPurpose'])
@@ -75,55 +76,54 @@ export function createBlindComparisonTrials(artifacts: ReadonlyArray<OfficialArt
 
 	for (const fixture of OFFICIAL_FIXTURE_KEYS) {
 		for (const elevationPreset of OFFICIAL_CAMERA_ELEVATION_PRESETS) {
-			for (const outputSizePreset of OFFICIAL_OUTPUT_SIZE_PRESETS) {
-				const trialId = `${fixture}__${elevationPreset.key}__${outputSizePreset.key}`
-				const assignments = shuffledRenderers(trialId).map((renderer, index) => {
-					const blindLabel = requireBlindLabel(index)
-					const sourceArtifacts = OFFICIAL_DIRECTION_KEYS.map((direction) => requireArtifact(artifacts, {
-						fixture,
-						renderer,
-						elevation: elevationPreset.key,
-						outputSize: outputSizePreset.key,
-						direction,
-					}))
-
-					return {
-						blindLabel,
-						renderer,
-						sourceArtifacts,
-					}
-				})
-
-				trials.push({
-					trialId,
+			const outputSize = PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE
+			const trialId = `${fixture}__${elevationPreset.key}__${outputSize}`
+			const assignments = shuffledRenderers(trialId).map((renderer, index) => {
+				const blindLabel = requireBlindLabel(index)
+				const sourceArtifacts = OFFICIAL_DIRECTION_KEYS.map((direction) => requireArtifact(artifacts, {
 					fixture,
+					renderer,
 					elevation: elevationPreset.key,
-					outputSize: outputSizePreset.key,
-					directions: OFFICIAL_DIRECTION_KEYS,
-					stimulusSets: assignments.map((assignment) => ({
-						blindLabel: assignment.blindLabel,
-						artifacts: assignment.sourceArtifacts.map((artifact) => ({
-							direction: artifact.direction,
-							artifactName: anonymizedArtifactName({
-								fixture,
-								elevation: elevationPreset.key,
-								outputSize: outputSizePreset.key,
-								blindLabel: assignment.blindLabel,
-								direction: artifact.direction,
-							}),
-						})),
-					})),
-				})
+					outputSize,
+					direction,
+				}))
 
-				answerKey.push({
-					trialId,
-					assignments: assignments.map((assignment) => ({
-						blindLabel: assignment.blindLabel,
-						renderer: assignment.renderer,
-						sourceArtifactNames: assignment.sourceArtifacts.map((artifact) => artifact.artifactName),
+				return {
+					blindLabel,
+					renderer,
+					sourceArtifacts,
+				}
+			})
+
+			trials.push({
+				trialId,
+				fixture,
+				elevation: elevationPreset.key,
+				outputSize,
+				directions: OFFICIAL_DIRECTION_KEYS,
+				stimulusSets: assignments.map((assignment) => ({
+					blindLabel: assignment.blindLabel,
+					artifacts: assignment.sourceArtifacts.map((artifact) => ({
+						direction: artifact.direction,
+						artifactName: anonymizedArtifactName({
+							fixture,
+							elevation: elevationPreset.key,
+							outputSize,
+							blindLabel: assignment.blindLabel,
+							direction: artifact.direction,
+						}),
 					})),
-				})
-			}
+				})),
+			})
+
+			answerKey.push({
+				trialId,
+				assignments: assignments.map((assignment) => ({
+					blindLabel: assignment.blindLabel,
+					renderer: assignment.renderer,
+					sourceArtifactNames: assignment.sourceArtifacts.map((artifact) => artifact.artifactName),
+				})),
+			})
 		}
 	}
 
@@ -265,7 +265,7 @@ function isOfficialElevation(value: unknown): value is CameraElevationPresetKey 
 }
 
 function isOfficialOutputSize(value: unknown): value is OutputSizePresetKey {
-	return OFFICIAL_OUTPUT_SIZE_KEY_SET.has(value)
+	return OFFICIAL_OUTPUT_SIZE_KEY_SET.has(value) && value === PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

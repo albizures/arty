@@ -5,7 +5,7 @@ import {
 	OFFICIAL_FIXTURE_KEYS,
 	officialArtifactName,
 } from './artifact-matrix'
-import { OFFICIAL_CAMERA_DIRECTION_PRESETS, OFFICIAL_CAMERA_ELEVATION_PRESETS, OFFICIAL_OUTPUT_SIZE_PRESETS } from './camera-output-preset'
+import { OFFICIAL_CAMERA_DIRECTION_PRESETS, OFFICIAL_CAMERA_ELEVATION_PRESETS } from './camera-output-preset'
 import {
 	assertOfficialBlindComparisonTrial,
 	assertOfficialComparisonManifestEntry,
@@ -40,32 +40,24 @@ describe('comparison and evaluation preset manifests', () => {
 		}
 	})
 
-	it('builds blind comparison trials for every fixture, elevation, and output size', () => {
+	it('builds participant-facing blind comparison trials for every fixture and elevation at the primary output size only', () => {
 		expect(OFFICIAL_BLIND_COMPARISON_TRIALS).toHaveLength(
-			OFFICIAL_FIXTURE_KEYS.length * OFFICIAL_CAMERA_ELEVATION_PRESETS.length * OFFICIAL_OUTPUT_SIZE_PRESETS.length,
+			OFFICIAL_FIXTURE_KEYS.length * OFFICIAL_CAMERA_ELEVATION_PRESETS.length,
 		)
 		expect(OFFICIAL_BLIND_COMPARISON_TRIALS.map((trial) => trial.trialId)).toEqual([
 			'chest__elev26__64',
-			'chest__elev26__128',
 			'chest__elev35__64',
-			'chest__elev35__128',
 			'chair__elev26__64',
-			'chair__elev26__128',
 			'chair__elev35__64',
-			'chair__elev35__128',
 			'lantern__elev26__64',
-			'lantern__elev26__128',
 			'lantern__elev35__64',
-			'lantern__elev35__128',
 			'generator__elev26__64',
-			'generator__elev26__128',
 			'generator__elev35__64',
-			'generator__elev35__128',
 			'rover__elev26__64',
-			'rover__elev26__128',
 			'rover__elev35__64',
-			'rover__elev35__128',
 		])
+		expect(OFFICIAL_BLIND_COMPARISON_TRIALS.every((trial) => trial.outputSize === PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE)).toBe(true)
+		expect(OFFICIAL_BLIND_COMPARISON_TRIALS.some((trial) => trial.outputSize === DIAGNOSTIC_DETAIL_OUTPUT_SIZE)).toBe(false)
 	})
 
 	it('groups all four directions and all renderer variants behind anonymized A/B/C labels', () => {
@@ -146,6 +138,19 @@ describe('comparison and evaluation preset manifests', () => {
 			...OFFICIAL_BLIND_COMPARISON_TRIALS[0],
 			canvasSize: { width: 64, height: 64 },
 		})).toThrowError('Blind comparison trials must use anonymized official preset metadata')
+		const diagnosticSizeTrial = {
+			...OFFICIAL_BLIND_COMPARISON_TRIALS[0],
+			outputSize: DIAGNOSTIC_DETAIL_OUTPUT_SIZE,
+			trialId: `${OFFICIAL_BLIND_COMPARISON_TRIALS[0]?.fixture}__${OFFICIAL_BLIND_COMPARISON_TRIALS[0]?.elevation}__${DIAGNOSTIC_DETAIL_OUTPUT_SIZE}`,
+			stimulusSets: OFFICIAL_BLIND_COMPARISON_TRIALS[0]!.stimulusSets.map((stimulusSet) => ({
+				...stimulusSet,
+				artifacts: stimulusSet.artifacts.map((artifact) => ({
+					...artifact,
+					artifactName: artifact.artifactName.replace('__64__', '__128__'),
+				})),
+			})),
+		}
+		expect(() => assertOfficialBlindComparisonTrial(diagnosticSizeTrial)).toThrowError('Blind comparison trials must use anonymized official preset metadata')
 		expect(() => assertOfficialBlindComparisonTrial({
 			...OFFICIAL_BLIND_COMPARISON_TRIALS[0],
 			outputSize: 96,

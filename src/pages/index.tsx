@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import type { ComparisonInspectionBackground } from '../domain/comparison-page-preview'
 
 import { useState } from 'react'
+import { OFFICIAL_BLIND_EVALUATION_PROTOCOL } from '../domain/blind-evaluation-protocol'
 import { OFFICIAL_BLIND_COMPARISON_TRIALS } from '../domain/comparison-evaluation-manifest'
 import {
 	COMPARISON_INSPECTION_BACKGROUND_OPTIONS,
@@ -43,6 +44,13 @@ const previewSurfaceBaseStyles = {
 	border: '1px solid #888',
 } satisfies CSSProperties
 
+// Stryker disable next-line ObjectLiteral,StringLiteral: response label spacing is visual-only page styling.
+const responseCheckboxLabelStyles = { display: 'block', margin: '12px 0' } satisfies CSSProperties
+// Stryker disable next-line ObjectLiteral,StringLiteral: cleanup notes label spacing is visual-only page styling.
+const cleanupNotesLabelStyles = { display: 'block', marginTop: '12px' } satisfies CSSProperties
+// Stryker disable next-line ObjectLiteral,StringLiteral: textarea sizing is visual-only page styling.
+const cleanupNotesTextareaStyles = { display: 'block', width: '100%' } satisfies CSSProperties
+
 const rejectedPhase0Features = [
 	'voxel-editing',
 	'renderer-controls',
@@ -51,6 +59,23 @@ const rejectedPhase0Features = [
 	'product-grade-navigation',
 	'generalized-asset-browsing',
 ] as const
+
+const blindLabels = ['A', 'B', 'C'] as const
+
+function DefectChecklist(props: { legend: string, namePrefix: string }) {
+	return (
+		<fieldset>
+			<legend>{props.legend}</legend>
+			{OFFICIAL_BLIND_EVALUATION_PROTOCOL.defectTaxonomy.map((defect) => (
+				/* Stryker disable next-line StringLiteral,ObjectLiteral: checklist label block layout is visual-only page styling. */
+				<label key={defect} style={{ display: 'block' }}>
+					<input name={props.namePrefix} type="checkbox" value={defect} />
+					{` ${defect}`}
+				</label>
+			))}
+		</fieldset>
+	)
+}
 
 export default function Home() {
 	const [inspectionBackground, setInspectionBackground] = useState<ComparisonInspectionBackground>('checkerboard')
@@ -141,6 +166,36 @@ export default function Home() {
 						</div>
 					</article>
 				))}
+			</section>
+			<section aria-label={`Blind comparison response ${trial.trialId}`}>
+				<h2>Trial response</h2>
+				<fieldset>
+					<legend>Rank A/B/C by most usable as pixel-art game prop sprites</legend>
+					{[1, 2, 3].map((rank) => (
+						/* Stryker disable next-line StringLiteral,ObjectLiteral: ranking label spacing is visual-only page styling. */
+						<label key={rank} style={{ display: 'block', marginBottom: '8px' }}>
+							{`Rank ${rank}: `}
+							<select name={`rank-${trial.trialId}-${rank}`} required>
+								<option value="">Choose A/B/C</option>
+								{blindLabels.map((label) => (
+									<option key={label} value={label}>{`Variant ${label}`}</option>
+								))}
+							</select>
+						</label>
+					))}
+				</fieldset>
+				<label style={responseCheckboxLabelStyles}>
+					<input name={`none-usable-${trial.trialId}`} type="checkbox" />
+					{' No option is usable'}
+				</label>
+				<DefectChecklist legend="Observed defects for the whole trial" namePrefix={`defects-${trial.trialId}-trial`} />
+				{blindLabels.map((label) => (
+					<DefectChecklist key={label} legend={`Observed defects for variant ${label}`} namePrefix={`defects-${trial.trialId}-${label}`} />
+				))}
+				<label style={cleanupNotesLabelStyles}>
+					Short cleanup notes
+					<textarea maxLength={500} name={`cleanup-notes-${trial.trialId}`} rows={3} style={cleanupNotesTextareaStyles} />
+				</label>
 			</section>
 			<section aria-label="Phase 0 comparison page scope">
 				<h2>Out of scope for this evidence page</h2>
