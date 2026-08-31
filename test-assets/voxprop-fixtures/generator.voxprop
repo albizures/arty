@@ -1,0 +1,66 @@
+# fixture identity: small-machine
+# fixture element: hard-surface body with boxy generator casing and stepped top housing
+# fixture element: vents cut across the front panel and left side
+# fixture element: pipes running over the top and down the rear corner
+# fixture element: gauge dial mounted on the front control panel
+# fixture element: warning/accent colors on hazard stripe and red control knob
+# fixture element: four squat feet under the chassis
+# fixture element: asymmetrical side pipe and offset control panel on the right face
+# fixture asymmetry: right-side pipe, offset gauge panel, and single red knob break bilateral symmetry
+# fixture stressor-silhouette: compact machine silhouette mixes boxy body, raised housing, protruding pipe, and squat feet
+# fixture stressor-material: noisy small-detail pressure across vents, gauge, warning/accent colors, pipe metal, and dark body panels
+# fixture stressor-material: material grouping must keep casing, vents, pipes, gauge glass, and warning/accent colors distinct at scale
+# fixture stressor-view: internal-edge suppression risks and isolated-pixel cleanup risks around vents, bolts, panel seams, and gauge rim
+# fixture stressor-view: mechanical legibility at game scale from front and three-quarter views despite dense small details
+model small-machine
+size 16 12 14
+palette phase0Props
+color casingBlue #465a66
+color darkPanel #1f2529
+color wornSteel #85897f
+color hazardYellow #d9a73a
+color gaugeGlass #7fc0c9
+color warningRed #b53a2f
+material body casingBlue
+material dark darkPanel
+material metal wornSteel
+material accent hazardYellow
+material gauge gaugeGlass
+material warn warningRed
+
+# hard-surface generator casing and raised motor housing
+fill body 2..13 2..7 2..10
+fill body 4..11 8..9 4..8
+fill dark 3..12 3..6 1..1
+fill dark 13..13 3..6 4..9
+
+# feet / skids below chassis
+fill dark 2..4 0..1 2..3
+fill dark 11..13 0..1 2..3
+fill dark 2..4 0..1 9..10
+fill dark 11..13 0..1 9..10
+
+# vents on front panel and side: many small dark slats against casing
+fill metal 4..11 5..5 0..0
+fill dark 4..11 4..4 0..0
+fill metal 4..11 3..3 0..0
+fill dark 0..0 4..6 4..8
+fill metal 0..0 4..4 4..8
+
+# front control panel with gauge/dial and warning accents
+fill metal 6..10 4..7 0..0
+fill gauge 7..8 5..6 0..0
+voxel dark 7 5 0
+voxel accent 5 7 0
+voxel accent 11 7 0
+voxel warn 10 5 0
+
+# pipes, bolts, and asymmetrical right-side machinery
+fill metal 5..11 10..10 6..6
+fill metal 11..11 7..10 6..6
+fill metal 14..14 4..8 7..7
+fill metal 13..14 8..8 7..7
+voxel metal 3 8 3
+voxel metal 12 8 9
+voxel dark 14 3 7
+voxel warn 14 6 8
