@@ -5,12 +5,14 @@ import {
 	OFFICIAL_FIXTURE_KEYS,
 	officialArtifactName,
 } from './artifact-matrix'
-import { OFFICIAL_CAMERA_DIRECTION_PRESETS, OFFICIAL_CAMERA_ELEVATION_PRESETS } from './camera-output-preset'
+import { OFFICIAL_CAMERA_DIRECTION_PRESETS, OFFICIAL_CAMERA_ELEVATION_PRESETS, OFFICIAL_OUTPUT_SIZE_PRESETS } from './camera-output-preset'
 import {
-	assertOfficialBlindEvaluationTrial,
+	assertOfficialBlindComparisonTrial,
 	assertOfficialComparisonManifestEntry,
+	createBlindComparisonTrials,
 	DIAGNOSTIC_DETAIL_OUTPUT_SIZE,
-	OFFICIAL_BLIND_EVALUATION_TRIALS,
+	OFFICIAL_BLIND_COMPARISON_ANSWER_KEY,
+	OFFICIAL_BLIND_COMPARISON_TRIALS,
 	OFFICIAL_COMPARISON_MANIFEST,
 	PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE,
 } from './comparison-evaluation-manifest'
@@ -38,62 +40,93 @@ describe('comparison and evaluation preset manifests', () => {
 		}
 	})
 
-	it('builds primary blind-evaluation trials for every fixture and elevation', () => {
-		expect(OFFICIAL_BLIND_EVALUATION_TRIALS).toHaveLength(
-			OFFICIAL_FIXTURE_KEYS.length * OFFICIAL_CAMERA_ELEVATION_PRESETS.length,
+	it('builds blind comparison trials for every fixture, elevation, and output size', () => {
+		expect(OFFICIAL_BLIND_COMPARISON_TRIALS).toHaveLength(
+			OFFICIAL_FIXTURE_KEYS.length * OFFICIAL_CAMERA_ELEVATION_PRESETS.length * OFFICIAL_OUTPUT_SIZE_PRESETS.length,
 		)
-
-		expect(OFFICIAL_BLIND_EVALUATION_TRIALS.map((trial) => `${trial.fixture}:${trial.elevation}`)).toEqual([
-			'chest:elev26',
-			'chest:elev35',
-			'chair:elev26',
-			'chair:elev35',
-			'lantern:elev26',
-			'lantern:elev35',
-			'generator:elev26',
-			'generator:elev35',
-			'rover:elev26',
-			'rover:elev35',
+		expect(OFFICIAL_BLIND_COMPARISON_TRIALS.map((trial) => trial.trialId)).toEqual([
+			'chest__elev26__64',
+			'chest__elev26__128',
+			'chest__elev35__64',
+			'chest__elev35__128',
+			'chair__elev26__64',
+			'chair__elev26__128',
+			'chair__elev35__64',
+			'chair__elev35__128',
+			'lantern__elev26__64',
+			'lantern__elev26__128',
+			'lantern__elev35__64',
+			'lantern__elev35__128',
+			'generator__elev26__64',
+			'generator__elev26__128',
+			'generator__elev35__64',
+			'generator__elev35__128',
+			'rover__elev26__64',
+			'rover__elev26__128',
+			'rover__elev35__64',
+			'rover__elev35__128',
 		])
 	})
 
-	it('groups all four directions together for each fixture/elevation trial at 64 output size', () => {
+	it('groups all four directions and all renderer variants behind anonymized A/B/C labels', () => {
 		const officialDirections = OFFICIAL_CAMERA_DIRECTION_PRESETS.map((preset) => preset.key)
 
-		for (const trial of OFFICIAL_BLIND_EVALUATION_TRIALS) {
-			expect(trial.outputSize).toBe(PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE)
+		for (const trial of OFFICIAL_BLIND_COMPARISON_TRIALS) {
 			expect(trial.directions).toEqual(officialDirections)
 			expect(trial.stimulusSets).toHaveLength(BLIND_EVALUATION_RENDERER_VARIANT_KEYS.length)
 
 			for (const [variantIndex, stimulusSet] of trial.stimulusSets.entries()) {
 				expect(stimulusSet.blindLabel).toBe(['A', 'B', 'C'][variantIndex])
-				expect(stimulusSet.renderer).toBe(BLIND_EVALUATION_RENDERER_VARIANT_KEYS[variantIndex])
+				expect(stimulusSet).not.toHaveProperty('renderer')
 				expect(stimulusSet.artifacts).toEqual(officialDirections.map((direction) => ({
 					direction,
-					artifactName: officialArtifactName({
-						fixture: trial.fixture,
-						renderer: stimulusSet.renderer,
-						elevation: trial.elevation,
-						outputSize: PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE,
-						direction,
-					}),
+					artifactName: `${trial.fixture}__${trial.elevation}__${trial.outputSize}__${stimulusSet.blindLabel}__${direction}.png`,
 				})))
 			}
 		}
 	})
 
-	it('keeps 128 output diagnostic instead of official blind stimulus', () => {
-		expect(OFFICIAL_COMPARISON_MANIFEST.some((entry) => entry.outputSize === DIAGNOSTIC_DETAIL_OUTPUT_SIZE)).toBe(true)
-		expect(OFFICIAL_BLIND_EVALUATION_TRIALS.every((trial) => trial.outputSize === PRIMARY_BLIND_EVALUATION_OUTPUT_SIZE)).toBe(true)
-		expect(OFFICIAL_BLIND_EVALUATION_TRIALS.flatMap((trial) => {
-			return trial.stimulusSets.flatMap((stimulusSet) => stimulusSet.artifacts.map((artifact) => artifact.artifactName))
-		}).every((artifactName) => artifactName.includes('__64__'))).toBe(true)
+	it('keeps renderer identity out of evaluator-facing trial data', () => {
+		for (const trial of OFFICIAL_BLIND_COMPARISON_TRIALS) {
+			const evaluatorJson = JSON.stringify(trial)
+			expect(evaluatorJson).not.toContain('baseline')
+			expect(evaluatorJson).not.toContain('conservative')
+			expect(evaluatorJson).not.toContain('full')
+			expect(() => assertOfficialBlindComparisonTrial(trial)).not.toThrow()
+		}
 	})
 
-	it('accepts official blind-evaluation trials', () => {
-		for (const trial of OFFICIAL_BLIND_EVALUATION_TRIALS) {
-			expect(() => assertOfficialBlindEvaluationTrial(trial)).not.toThrow()
+	it('keeps renderer assignments in a separate non-evaluator answer key', () => {
+		expect(OFFICIAL_BLIND_COMPARISON_ANSWER_KEY).toHaveLength(OFFICIAL_BLIND_COMPARISON_TRIALS.length)
+
+		for (const answer of OFFICIAL_BLIND_COMPARISON_ANSWER_KEY) {
+			const trial = OFFICIAL_BLIND_COMPARISON_TRIALS.find((candidate) => candidate.trialId === answer.trialId)
+			expect(trial).toBeDefined()
+			expect(answer.assignments.map((assignment) => assignment.blindLabel)).toEqual(['A', 'B', 'C'])
+			expect([...answer.assignments.map((assignment) => assignment.renderer)].sort()).toEqual([...BLIND_EVALUATION_RENDERER_VARIANT_KEYS].sort())
+
+			for (const assignment of answer.assignments) {
+				expect(assignment.sourceArtifactNames).toEqual(OFFICIAL_CAMERA_DIRECTION_PRESETS.map((direction) => officialArtifactName({
+					fixture: trial?.fixture ?? 'chest',
+					renderer: assignment.renderer,
+					elevation: trial?.elevation ?? 'elev26',
+					outputSize: trial?.outputSize ?? 64,
+					direction: direction.key,
+				})))
+			}
 		}
+	})
+
+	it('randomizes label assignment deterministically by trial instead of exposing renderer order', () => {
+		const answerRendererOrders = OFFICIAL_BLIND_COMPARISON_ANSWER_KEY.map((answer) => answer.assignments.map((assignment) => assignment.renderer).join(','))
+
+		expect(new Set(answerRendererOrders).size).toBeGreaterThan(1)
+		expect(answerRendererOrders).toContain('baseline,conservative,full')
+		expect(answerRendererOrders).toContain('full,baseline,conservative')
+		expect(createBlindComparisonTrials(OFFICIAL_ARTIFACT_MATRIX)).toEqual({
+			trials: OFFICIAL_BLIND_COMPARISON_TRIALS,
+			answerKey: OFFICIAL_BLIND_COMPARISON_ANSWER_KEY,
+		})
 	})
 
 	it('rejects arbitrary camera and output configuration in manifest consumers', () => {
@@ -109,14 +142,14 @@ describe('comparison and evaluation preset manifests', () => {
 			...OFFICIAL_COMPARISON_MANIFEST[0],
 			outputSize: 96,
 		})).toThrowError('Output size must be an official preset')
-		expect(() => assertOfficialBlindEvaluationTrial({
-			...OFFICIAL_BLIND_EVALUATION_TRIALS[0],
+		expect(() => assertOfficialBlindComparisonTrial({
+			...OFFICIAL_BLIND_COMPARISON_TRIALS[0],
 			canvasSize: { width: 64, height: 64 },
-		})).toThrowError('Blind evaluation trials must use official primary preset metadata')
-		expect(() => assertOfficialBlindEvaluationTrial({
-			...OFFICIAL_BLIND_EVALUATION_TRIALS[0],
-			outputSize: DIAGNOSTIC_DETAIL_OUTPUT_SIZE,
-		})).toThrowError('Blind evaluation trials must use official primary preset metadata')
+		})).toThrowError('Blind comparison trials must use anonymized official preset metadata')
+		expect(() => assertOfficialBlindComparisonTrial({
+			...OFFICIAL_BLIND_COMPARISON_TRIALS[0],
+			outputSize: 96,
+		})).toThrowError('Blind comparison trials must use anonymized official preset metadata')
 	})
 
 	it('rejects comparison entries whose fixture, renderer, or artifact name are not official', () => {
@@ -140,57 +173,8 @@ describe('comparison and evaluation preset manifests', () => {
 		})).toThrowError('Comparison manifest entries must use official preset metadata')
 	})
 
-	it('rejects malformed blind-evaluation trial metadata', () => {
-		const trial = OFFICIAL_BLIND_EVALUATION_TRIALS[0]
-		const directionsArrayLike = {
-			length: OFFICIAL_CAMERA_DIRECTION_PRESETS.length,
-			every: () => true,
-		}
-		const stimulusSetsArrayLike = {
-			length: BLIND_EVALUATION_RENDERER_VARIANT_KEYS.length,
-			* entries() {
-				yield* trial.stimulusSets.entries()
-			},
-		}
-		const artifactsArrayLike = {
-			length: OFFICIAL_CAMERA_DIRECTION_PRESETS.length,
-			* entries() {
-				yield* trial.stimulusSets[0].artifacts.entries()
-			},
-		}
-		const invalidFixtureTrial = {
-			...trial,
-			fixture: 'spaceship',
-			stimulusSets: trial.stimulusSets.map((stimulusSet) => ({
-				...stimulusSet,
-				artifacts: stimulusSet.artifacts.map((artifact) => ({
-					...artifact,
-					artifactName: `spaceship__${stimulusSet.renderer}__${trial.elevation}__64__${artifact.direction}.png`,
-				})),
-			})),
-		}
-		const invalidElevationTrial = {
-			...trial,
-			elevation: 'elev45',
-			stimulusSets: trial.stimulusSets.map((stimulusSet) => ({
-				...stimulusSet,
-				artifacts: stimulusSet.artifacts.map((artifact) => ({
-					...artifact,
-					artifactName: `${trial.fixture}__${stimulusSet.renderer}__elev45__64__${artifact.direction}.png`,
-				})),
-			})),
-		}
-		const invalidRendererTrial = {
-			...trial,
-			stimulusSets: [{
-				...trial.stimulusSets[0],
-				renderer: 'debug',
-				artifacts: trial.stimulusSets[0].artifacts.map((artifact) => ({
-					...artifact,
-					artifactName: `${trial.fixture}__debug__${trial.elevation}__64__${artifact.direction}.png`,
-				})),
-			}, ...trial.stimulusSets.slice(1)],
-		}
+	it('rejects malformed blind-comparison trial metadata and renderer leaks', () => {
+		const trial = OFFICIAL_BLIND_COMPARISON_TRIALS[0]
 		const invalidArtifactDirectionTrial = {
 			...trial,
 			stimulusSets: [{
@@ -198,40 +182,103 @@ describe('comparison and evaluation preset manifests', () => {
 				artifacts: [{
 					...trial.stimulusSets[0].artifacts[0],
 					direction: 'side',
-					artifactName: `${trial.fixture}__${trial.stimulusSets[0].renderer}__${trial.elevation}__64__side.png`,
+					artifactName: `${trial.fixture}__${trial.elevation}__${trial.outputSize}__A__side.png`,
 				}, ...trial.stimulusSets[0].artifacts.slice(1)],
 			}, ...trial.stimulusSets.slice(1)],
+		}
+		const trialWithUnofficialFixtureOnly = {
+			...trial,
+			fixture: 'spaceship',
+			trialId: `spaceship__${trial.elevation}__${trial.outputSize}`,
+			stimulusSets: trial.stimulusSets.map((stimulusSet) => ({
+				...stimulusSet,
+				artifacts: stimulusSet.artifacts.map((artifact) => ({
+					...artifact,
+					artifactName: artifact.artifactName.replace('chest', 'spaceship'),
+				})),
+			})),
+		}
+		const trialWithUnofficialElevationOnly = {
+			...trial,
+			elevation: 'elev45',
+			trialId: `${trial.fixture}__elev45__${trial.outputSize}`,
+			stimulusSets: trial.stimulusSets.map((stimulusSet) => ({
+				...stimulusSet,
+				artifacts: stimulusSet.artifacts.map((artifact) => ({
+					...artifact,
+					artifactName: artifact.artifactName.replace('elev26', 'elev45'),
+				})),
+			})),
+		}
+		const trialWithUnofficialOutputSizeOnly = {
+			...trial,
+			outputSize: 96,
+			trialId: `${trial.fixture}__${trial.elevation}__96`,
+			stimulusSets: trial.stimulusSets.map((stimulusSet) => ({
+				...stimulusSet,
+				artifacts: stimulusSet.artifacts.map((artifact) => ({
+					...artifact,
+					artifactName: artifact.artifactName.replace('__64__', '__96__'),
+				})),
+			})),
+		}
+		const trialWithArtifactExtraKeyOnly = {
+			...trial,
+			stimulusSets: [{
+				...trial.stimulusSets[0],
+				artifacts: [{ ...trial.stimulusSets[0].artifacts[0], renderer: 'baseline' }, ...trial.stimulusSets[0].artifacts.slice(1)],
+			}, ...trial.stimulusSets.slice(1)],
+		}
+		const directionsArrayLike = {
+			length: 4,
+			every: () => true,
+		}
+		const stimulusSetsArrayLike = {
+			length: 3,
+			entries: function* entries() {},
+		}
+		const artifactsArrayLike = {
+			length: 4,
+			entries: function* entries() {},
 		}
 		const malformedTrials = [
 			null,
 			[],
 			undefined,
+			trialWithUnofficialFixtureOnly,
+			trialWithUnofficialElevationOnly,
+			trialWithUnofficialOutputSizeOnly,
+			trialWithArtifactExtraKeyOnly,
 			{ ...trial, fixture: 'spaceship' },
-			invalidFixtureTrial,
-			{ ...trial, elevation: 35 },
-			invalidElevationTrial,
-			{ ...trial, directions: 'front-right' },
+			{ ...trial, elevation: 'elev45' },
+			{ ...trial, outputSize: 96 },
+			{ ...trial, trialId: 'renamed-trial' },
 			{ ...trial, directions: directionsArrayLike },
+			{ ...trial, stimulusSets: stimulusSetsArrayLike },
+			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], artifacts: artifactsArrayLike }, ...trial.stimulusSets.slice(1)] },
+			{ ...trial, directions: 'front-right' },
 			{ ...trial, directions: ['front-right'] },
 			{ ...trial, directions: ['front-left', 'back-right', 'back-left', 'front-right'] },
 			{ ...trial, stimulusSets: 'A/B/C' },
-			{ ...trial, stimulusSets: stimulusSetsArrayLike },
 			{ ...trial, stimulusSets: [trial.stimulusSets[0]] },
 			{ ...trial, stimulusSets: [null, ...trial.stimulusSets.slice(1)] },
 			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], blindLabel: 'Z' }, ...trial.stimulusSets.slice(1)] },
-			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], renderer: 'debug' }, ...trial.stimulusSets.slice(1)] },
-			invalidRendererTrial,
+			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], renderer: 'baseline' }, ...trial.stimulusSets.slice(1)] },
 			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], artifacts: 'artifact' }, ...trial.stimulusSets.slice(1)] },
-			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], artifacts: artifactsArrayLike }, ...trial.stimulusSets.slice(1)] },
 			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], artifacts: [trial.stimulusSets[0].artifacts[0]] }, ...trial.stimulusSets.slice(1)] },
 			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], artifacts: [null, ...trial.stimulusSets[0].artifacts.slice(1)] }, ...trial.stimulusSets.slice(1)] },
-			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], artifacts: [{ ...trial.stimulusSets[0].artifacts[0], direction: 'side' }, ...trial.stimulusSets[0].artifacts.slice(1)] }, ...trial.stimulusSets.slice(1)] },
 			invalidArtifactDirectionTrial,
 			{ ...trial, stimulusSets: [{ ...trial.stimulusSets[0], artifacts: [{ ...trial.stimulusSets[0].artifacts[0], artifactName: 'custom.png' }, ...trial.stimulusSets[0].artifacts.slice(1)] }, ...trial.stimulusSets.slice(1)] },
 		]
 
 		for (const malformedTrial of malformedTrials) {
-			expect(() => assertOfficialBlindEvaluationTrial(malformedTrial)).toThrowError('Blind evaluation trials must use official primary preset metadata')
+			expect(() => assertOfficialBlindComparisonTrial(malformedTrial)).toThrowError('Blind comparison trials must use anonymized official preset metadata')
 		}
+	})
+
+	it('rejects missing official source artifacts when building blind trials', () => {
+		expect(() => createBlindComparisonTrials(OFFICIAL_ARTIFACT_MATRIX.slice(1))).toThrowError(
+			'Missing official artifact \'chest__baseline__elev26__64__front-right.png\' for blind comparison trial.',
+		)
 	})
 })

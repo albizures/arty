@@ -219,9 +219,6 @@ importers:
       react:
         specifier: ^19.2.8
         version: 19.2.8
-      react-dom:
-        specifier: ^19.2.8
-        version: 19.2.8(react@19.2.8)
       zod:
         specifier: ^4.5.2
         version: 4.5.2
@@ -271,6 +268,9 @@ importers:
       fallow:
         specifier: ^3.20.0
         version: 3.20.0
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
