@@ -4,7 +4,7 @@ import type { ComparisonInspectionBackground } from '../domain/comparison-page-p
 
 import { useState } from 'react'
 import { OFFICIAL_BLIND_EVALUATION_PROTOCOL } from '../domain/blind-evaluation-protocol'
-import { OFFICIAL_BLIND_COMPARISON_TRIALS } from '../domain/comparison-evaluation-manifest'
+import { fixedPhase0ComparisonTrial, PHASE_0_COMPARISON_ARTIFACT_MANIFEST } from '../domain/comparison-artifact-manifest'
 import {
 	COMPARISON_INSPECTION_BACKGROUND_OPTIONS,
 
@@ -12,9 +12,6 @@ import {
 	comparisonPageTrialPreview,
 	phase0ComparisonPageScopeDecision,
 } from '../domain/comparison-page-preview'
-
-const ARTIFACT_BASE_PATH = '/phase-0/blind-artifacts'
-const FIXED_TRIAL = OFFICIAL_BLIND_COMPARISON_TRIALS[0]!
 
 const pageStyles = {
 	fontFamily: 'system-ui, sans-serif',
@@ -79,7 +76,9 @@ function DefectChecklist(props: { legend: string, namePrefix: string }) {
 
 export default function Home() {
 	const [inspectionBackground, setInspectionBackground] = useState<ComparisonInspectionBackground>('checkerboard')
-	const trial = comparisonPageTrialPreview(FIXED_TRIAL, { artifactBasePath: ARTIFACT_BASE_PATH })
+	const trial = comparisonPageTrialPreview(fixedPhase0ComparisonTrial(), {
+		artifactBasePath: PHASE_0_COMPARISON_ARTIFACT_MANIFEST.artifactBasePath,
+	})
 	const previewSurfaceStyles = {
 		...previewSurfaceBaseStyles,
 		...comparisonInspectionBackgroundStyle(inspectionBackground),
