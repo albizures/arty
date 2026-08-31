@@ -23,7 +23,7 @@
 		"break": 100
 	},
 	"ignoreStatic": true,
-	"incremental": true,
+	"incremental": false,
 	"htmlReporter": {
 		"fileName": "reports/mutation/mutation.html"
 	},
