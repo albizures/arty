@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs'
+
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
@@ -32,6 +34,19 @@ describe('home comparison page', () => {
 		expect(html).toContain('style="display:block;image-rendering:auto"')
 		expect(html).toContain('style="display:block;image-rendering:pixelated"')
 		expect(html.match(/src="\/phase-0\/blind-artifacts\/chest__elev26__64__A__front-right\.png"/g)).toHaveLength(2)
+	})
+
+	it('serves every rendered preview source as a public PNG file', () => {
+		const html = renderToStaticMarkup(<Home />)
+		const imageSources = [...html.matchAll(/src="([^"]+)"/g)].map((match) => match[1]!)
+		const uniqueImageSources = [...new Set(imageSources)]
+
+		expect(uniqueImageSources).toHaveLength(12)
+		for (const imageSource of uniqueImageSources) {
+			const publicPath = `public${imageSource}`
+			expect(existsSync(publicPath), `${imageSource} should be a public static asset`).toBe(true)
+			expect([...readFileSync(publicPath).subarray(0, 8)], `${imageSource} should be a PNG`).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
+		}
 	})
 
 	it('renders page-only transparency inspection controls and rejected product features', () => {
