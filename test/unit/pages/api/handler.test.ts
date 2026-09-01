@@ -20,13 +20,13 @@ describe('oRPC API handler', () => {
 	})
 
 	it('disables Next body parsing for streaming RPC requests', async () => {
-		const {config} = await import('../../../../src/pages/api/rpc/[...path]')
+		const { config } = await import('../../../../src/pages/api/rpc/[...path]')
 		expect(config).toEqual({ api: { bodyParser: false } })
 	})
 
 	it('delegates matched requests to the RPC handler', async () => {
 		mocks.handle.mockResolvedValueOnce({ matched: true })
-		const { default: handleORPC} = await import('../../../../src/pages/api/rpc/[...path]')
+		const { default: handleORPC } = await import('../../../../src/pages/api/rpc/[...path]')
 		const req = {} as NextApiRequest
 		const res = response()
 
@@ -39,7 +39,7 @@ describe('oRPC API handler', () => {
 
 	it('returns a 404 when no RPC route matches', async () => {
 		mocks.handle.mockResolvedValueOnce({ matched: false })
-		const { default: handleORPC} = await import('../../../../src/pages/api/rpc/[...path]')
+		const { default: handleORPC } = await import('../../../../src/pages/api/rpc/[...path]')
 		const req = {} as NextApiRequest
 		const res = response()
 

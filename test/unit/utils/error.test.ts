@@ -10,5 +10,4 @@ describe('assert', () => {
 	it('should not throw when an invariant is true', () => {
 		expect(() => assert(true, 'good')).not.toThrow('broken')
 	})
-
 })
