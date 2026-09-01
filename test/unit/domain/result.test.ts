@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-
-import { failure, fromSyncThrowable, fromThrowable, success } from './result'
+import { failure, fromSyncThrowable, fromThrowable, success } from '../../../src/domain/result'
 
 describe('result helpers', () => {
 	it('constructs failures with and without classified errors', () => {

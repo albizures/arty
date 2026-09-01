@@ -23,8 +23,7 @@ describe('orpc client', () => {
 	})
 
 	it('creates a browser RPC client pointed at the API route', async () => {
-		const { orpc } = await import('./orpc')
-
+		const { orpc } = await import('../../../src/utils/orpc')
 		expect(mocks.RPCLink).toHaveBeenCalledWith({ url: '/api/rpc' })
 		expect(mocks.createORPCClient).toHaveBeenCalledTimes(1)
 		expect(orpc).toEqual({ link: mocks.RPCLink.mock.instances[0] })

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-
-import { createPlanet, findPlanet, listPlanets, router } from './router'
+import { createPlanet, findPlanet, listPlanets, router } from '../../../src/server/router'
 
 type Handler = (context: { input: unknown }) => Promise<unknown>
 type ProcedureInternals = {
